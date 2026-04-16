@@ -21,11 +21,22 @@ public class UserController {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    private boolean isValidRole(String role) {
+        return role.equals("ROLE_USER") || role.equals("ROLE_ADMIN");
+    }
+
     @PostMapping("/register")
     public ResponseEntity<ApiResponse<User>> createUser(@RequestBody UserRequest request) {
-        if (request.getRole() != null &&
-                !request.getRole().equals("ROLE_USER") &&
-                !request.getRole().equals("ROLE_ADMIN")) {
+        if (request.getUsername() == null || request.getUsername().isBlank()) {
+            return ResponseEntity.status(400).body(ApiResponse.error("Username is required."));
+        }
+        if (request.getPassword() == null || request.getPassword().isBlank()) {
+            return ResponseEntity.status(400).body(ApiResponse.error("Password is required."));
+        }
+        if (request.getSurname() == null || request.getSurname().isBlank()) {
+            return ResponseEntity.status(400).body(ApiResponse.error("Surname is required."));
+        }
+        if (request.getRole() != null && !isValidRole(request.getRole())) {
             return ResponseEntity.status(400)
                     .body(ApiResponse.error("Invalid role. Accepted values: ROLE_USER, ROLE_ADMIN"));
         }
@@ -54,9 +65,17 @@ public class UserController {
     @PutMapping("/{id}")
     public ResponseEntity<ApiResponse<User>> updateUser(@PathVariable Long id,
             @RequestBody UserRequest request) {
+        if (request.getRole() != null && !isValidRole(request.getRole())) {
+            return ResponseEntity.status(400)
+                    .body(ApiResponse.error("Invalid role. Accepted values: ROLE_USER, ROLE_ADMIN"));
+        }
         return userRepository.findById(id).map(user -> {
-            user.setUsername(request.getUsername());
-            user.setSurname(request.getSurname());
+            if (request.getUsername() != null && !request.getUsername().isBlank()) {
+                user.setUsername(request.getUsername());
+            }
+            if (request.getSurname() != null && !request.getSurname().isBlank()) {
+                user.setSurname(request.getSurname());
+            }
             if (request.getPassword() != null && !request.getPassword().isBlank()) {
                 user.setPassword(passwordEncoder.encode(request.getPassword()));
             }
