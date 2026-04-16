@@ -3,7 +3,7 @@ spring:
     name: java-api
 
   datasource:
-    url: jdbc:postgresql://localhost:5433/user_management_db # Port 5433 olarak ayarlı!
+    url: jdbc:postgresql://localhost:5432/user_management_db # Port 5433 olarak ayarlı!
     username: admin
     password: password123
   
