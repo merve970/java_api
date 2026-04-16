@@ -3,23 +3,23 @@ services:
   postgres_db:
     image: postgres:17
     platform: linux/amd64
-    container_name: spring_postgres # İsim çakışmasını önledik
+    container_name: spring_postgres 
     restart: always
     ports:
-      - "5433:5432" # 5434 doluydu, biz 5433'ü aldık!
+      - "5433:5432" # 5433'ü kullanacağız.
     environment:
       POSTGRES_USER: admin
       POSTGRES_PASSWORD: password123
       POSTGRES_DB: user_management_db
     volumes:
-      - spring_postgres_data:/var/lib/postgresql/data # Veriler eski projeye karışmayacak
+      - spring_postgres_data:/var/lib/postgresql/data 
 
   pgadmin:
     image: dpage/pgadmin4
     container_name: spring_pgadmin
     restart: always
     ports:
-      - "5051:80" # 5050 doluydu, biz 5051'den gireceğiz!
+      - "5051:80" # 5051 portu ile pgAdmin'e erişiliyor.
     environment:
       PGADMIN_DEFAULT_EMAIL: admin@admin.com
       PGADMIN_DEFAULT_PASSWORD: admin123
@@ -27,4 +27,4 @@ services:
       - postgres_db
 
 volumes:
-  spring_postgres_data: # Yepyeni ve izole bir veri alanı
+  spring_postgres_data: # Yepyeni veri alanı.
