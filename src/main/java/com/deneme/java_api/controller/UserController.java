@@ -23,6 +23,12 @@ public class UserController {
 
     @PostMapping("/register")
     public ResponseEntity<ApiResponse<User>> createUser(@RequestBody UserRequest request) {
+        if (request.getRole() != null &&
+                !request.getRole().equals("ROLE_USER") &&
+                !request.getRole().equals("ROLE_ADMIN")) {
+            return ResponseEntity.status(400)
+                    .body(ApiResponse.error("Invalid role. Accepted values: ROLE_USER, ROLE_ADMIN"));
+        }
         User user = new User();
         user.setUsername(request.getUsername());
         user.setSurname(request.getSurname());
