@@ -1,5 +1,7 @@
 package com.deneme.java_api.controller;
 
+import com.deneme.java_api.dto.ApiResponse;
+import com.deneme.java_api.dto.UserRequest;
 import com.deneme.java_api.entity.User;
 import com.deneme.java_api.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,49 +21,53 @@ public class UserController {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
-    // --- CREATE (POST) ---
     @PostMapping("/register")
-    public ResponseEntity<User> createUser(@RequestBody User user) {
-        // Not: Gerçek projede burada UserRequest DTO'su kullanılır ve şifre
-        // Bcryptlenir.
-        user.setPassword(passwordEncoder.encode(user.getPassword()));
+    public ResponseEntity<ApiResponse<User>> createUser(@RequestBody UserRequest request) {
+        User user = new User();
+        user.setUsername(request.getUsername());
+        user.setSurname(request.getSurname());
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
+        user.setRole(request.getRole() != null ? request.getRole() : "ROLE_USER");
         User savedUser = userRepository.save(user);
-        return ResponseEntity.ok(savedUser);
+        return ResponseEntity.ok(ApiResponse.success("User created successfully.", savedUser));
     }
 
-    // --- READ ALL (GET) ---
     @GetMapping
-    public List<User> getAllUsers() {
-        return userRepository.findAll();
+    public ResponseEntity<ApiResponse<List<User>>> getAllUsers() {
+        List<User> users = userRepository.findAll();
+        return ResponseEntity.ok(ApiResponse.success("Users listed successfully.", users));
     }
 
-    // --- READ ONE (GET) ---
     @GetMapping("/{id}")
-    public ResponseEntity<User> getUserById(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<User>> getUserById(@PathVariable Long id) {
         return userRepository.findById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+                .map(user -> ResponseEntity.ok(ApiResponse.success("User found.", user)))
+                .orElse(ResponseEntity.status(404).body(ApiResponse.error("User not found with id: " + id)));
     }
 
-    // --- UPDATE (PUT) ---
     @PutMapping("/{id}")
-    public ResponseEntity<User> updateUser(@PathVariable Long id, @RequestBody User userDetails) {
+    public ResponseEntity<ApiResponse<User>> updateUser(@PathVariable Long id,
+            @RequestBody UserRequest request) {
         return userRepository.findById(id).map(user -> {
-            user.setUsername(userDetails.getUsername());
-            user.setSurname(userDetails.getSurname());
-            user.setRole(userDetails.getRole());
-            // Şifre güncellenecekse burada tekrar encode edilmeli
-            return ResponseEntity.ok(userRepository.save(user));
-        }).orElse(ResponseEntity.notFound().build());
+            user.setUsername(request.getUsername());
+            user.setSurname(request.getSurname());
+            if (request.getPassword() != null && !request.getPassword().isBlank()) {
+                user.setPassword(passwordEncoder.encode(request.getPassword()));
+            }
+            if (request.getRole() != null) {
+                user.setRole(request.getRole());
+            }
+            User updatedUser = userRepository.save(user);
+            return ResponseEntity.ok(ApiResponse.success("User updated successfully.", updatedUser));
+        }).orElse(ResponseEntity.status(404).body(ApiResponse.error("User not found with id: " + id)));
     }
 
-    // --- DELETE (DELETE) ---
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<Void>> deleteUser(@PathVariable Long id) {
         if (userRepository.existsById(id)) {
             userRepository.deleteById(id);
-            return ResponseEntity.noContent().build();
+            return ResponseEntity.ok(ApiResponse.success("User deleted successfully.", null));
         }
-        return ResponseEntity.notFound().build();
+        return ResponseEntity.status(404).body(ApiResponse.error("User not found with id: " + id));
     }
 }

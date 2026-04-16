@@ -1,5 +1,6 @@
 package com.deneme.java_api.controller;
 
+import com.deneme.java_api.dto.ApiResponse;
 import com.deneme.java_api.dto.LoginRequest;
 import com.deneme.java_api.dto.LoginResponse;
 import com.deneme.java_api.security.JwtUtil;
@@ -18,12 +19,12 @@ public class AuthController {
     private final JwtUtil jwtUtil;
 
     @PostMapping("/login")
-    public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest request) {
+    public ResponseEntity<ApiResponse<LoginResponse>> login(@RequestBody LoginRequest request) {
         Authentication auth = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         request.getUsername(), request.getPassword()));
         String role = auth.getAuthorities().iterator().next().getAuthority();
         String token = jwtUtil.generateToken(auth.getName(), role);
-        return ResponseEntity.ok(new LoginResponse(token));
+        return ResponseEntity.ok(ApiResponse.success("Login successful", new LoginResponse(token)));
     }
 }
