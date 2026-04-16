@@ -4,6 +4,7 @@ import com.deneme.java_api.entity.User;
 import com.deneme.java_api.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -15,10 +16,15 @@ public class UserController {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
     // --- CREATE (POST) ---
     @PostMapping("/register")
     public ResponseEntity<User> createUser(@RequestBody User user) {
-        // Not: Gerçek projede burada UserRequest DTO'su kullanılır ve şifre Bcryptlenir.
+        // Not: Gerçek projede burada UserRequest DTO'su kullanılır ve şifre
+        // Bcryptlenir.
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
         User savedUser = userRepository.save(user);
         return ResponseEntity.ok(savedUser);
     }
