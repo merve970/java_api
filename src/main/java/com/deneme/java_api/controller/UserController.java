@@ -10,6 +10,7 @@ import jakarta.validation.Valid;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
@@ -121,11 +122,25 @@ public ResponseEntity<ApiResponse<User>> updateRole(
 }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse<Void>> deleteUser(@PathVariable Long id) {
-        if (userRepository.existsById(id)) {
-            userRepository.deleteById(id);
-            return ResponseEntity.ok(ApiResponse.success("User deleted successfully.", null));
+@PreAuthorize("hasRole('ADMIN')") // Sadece ADMIN silebilir kuralını buraya ekleyebilirsin
+public ResponseEntity<ApiResponse<Void>> deleteUser(@PathVariable Long id) {
+    // 1. Mevcut giriş yapmış kullanıcının bilgilerini al
+    String currentUsername = org.springframework.security.core.context.SecurityContextHolder
+            .getContext().getAuthentication().getName();
+
+    // 2. Veritabanından silinmek istenen kullanıcıyı bul
+    return userRepository.findById(id).map(user -> {
+        
+        // 3. KENDİNİ SİLME KONTROLÜ
+        if (user.getUsername().equals(currentUsername)) {
+            return ResponseEntity.status(400)
+                    .body(ApiResponse.<Void>error("You cannot delete your own account!"));
         }
-        return ResponseEntity.status(404).body(ApiResponse.error("User not found with id: " + id));
-    }
+
+        // 4. Her şey yolundaysa sil
+        userRepository.deleteById(id);
+        return ResponseEntity.ok(ApiResponse.<Void>success("User deleted successfully.", null));
+
+    }).orElse(ResponseEntity.status(404).body(ApiResponse.error("User not found with id: " + id)));
+}
 }
