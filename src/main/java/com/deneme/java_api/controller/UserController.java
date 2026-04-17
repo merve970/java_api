@@ -1,6 +1,7 @@
 package com.deneme.java_api.controller;
 
 import com.deneme.java_api.dto.ApiResponse;
+import com.deneme.java_api.dto.RoleUpdateRequest;
 import com.deneme.java_api.dto.UserRequest;
 import com.deneme.java_api.entity.User;
 import com.deneme.java_api.repository.UserRepository;
@@ -98,6 +99,26 @@ public class UserController {
             return ResponseEntity.ok(ApiResponse.success("User updated successfully.", updatedUser));
         }).orElse(ResponseEntity.status(404).body(ApiResponse.error("User not found with id: " + id)));
     }
+
+    @PatchMapping("/{id}/role")
+public ResponseEntity<ApiResponse<User>> updateRole(
+        @PathVariable Long id, 
+        @RequestBody RoleUpdateRequest roleRequest) { // Map yerine yeni sınıfımızı yazdık
+    
+    String newRole = roleRequest.getRole(); // Artık .get("role") yerine .getRole() diyoruz
+    
+    // ... geri kalan kontrol ve kaydetme kodların aynı kalabilir
+    if (newRole == null || !isValidRole(newRole)) {
+        return ResponseEntity.status(400)
+                .body(ApiResponse.error("Invalid role. Accepted values: ROLE_USER, ROLE_ADMIN"));
+    }
+    
+    return userRepository.findById(id).map(user -> {
+        user.setRole(newRole);
+        userRepository.save(user);
+        return ResponseEntity.ok(ApiResponse.success("Role updated successfully", user));
+    }).orElse(ResponseEntity.status(404).body(ApiResponse.error("User not found")));
+}
 
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> deleteUser(@PathVariable Long id) {
