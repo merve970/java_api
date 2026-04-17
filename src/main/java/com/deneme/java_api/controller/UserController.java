@@ -4,6 +4,9 @@ import com.deneme.java_api.dto.ApiResponse;
 import com.deneme.java_api.dto.UserRequest;
 import com.deneme.java_api.entity.User;
 import com.deneme.java_api.repository.UserRepository;
+
+import jakarta.validation.Valid;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -64,11 +67,20 @@ public class UserController {
 
     @PutMapping("/{id}")
     public ResponseEntity<ApiResponse<User>> updateUser(@PathVariable Long id,
-            @RequestBody UserRequest request) {
+            @Valid @RequestBody UserRequest request) {
+
         if (request.getRole() != null && !isValidRole(request.getRole())) {
             return ResponseEntity.status(400)
                     .body(ApiResponse.error("Invalid role. Accepted values: ROLE_USER, ROLE_ADMIN"));
         }
+
+        if (request.getUsername() != null && !request.getUsername().isBlank()) {
+            if (userRepository.existsByUsernameAndIdNot(request.getUsername(), id)) {
+                return ResponseEntity.status(409)
+                        .body(ApiResponse.error("Username already taken."));
+            }
+        }
+
         return userRepository.findById(id).map(user -> {
             if (request.getUsername() != null && !request.getUsername().isBlank()) {
                 user.setUsername(request.getUsername());

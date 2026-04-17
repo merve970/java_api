@@ -7,7 +7,9 @@ import java.util.Optional;
 
 @Repository
 public interface UserRepository extends JpaRepository<User, Long> {
-    
+
     // Kullanıcı giriş yaparken (Login) onu kullanıcı adından bulabilmemiz için:
     Optional<User> findByUsername(String username);
+
+    boolean existsByUsernameAndIdNot(String username, Long id);
 }
