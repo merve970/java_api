@@ -4,143 +4,75 @@ import com.deneme.java_api.dto.ApiResponse;
 import com.deneme.java_api.dto.RoleUpdateRequest;
 import com.deneme.java_api.dto.UserRequest;
 import com.deneme.java_api.entity.User;
-import com.deneme.java_api.repository.UserRepository;
-
+import com.deneme.java_api.service.UserService;
 import jakarta.validation.Valid;
-
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/users")
+@RequiredArgsConstructor
 public class UserController {
 
-    @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
-    private PasswordEncoder passwordEncoder;
-
-    private boolean isValidRole(String role) {
-        return role.equals("ROLE_USER") || role.equals("ROLE_ADMIN");
-    }
+    private final UserService userService;
 
     @PostMapping("/register")
     public ResponseEntity<ApiResponse<User>> createUser(@RequestBody UserRequest request) {
-        if (request.getUsername() == null || request.getUsername().isBlank()) {
+        // Temel boşluk kontrolleri (Dilersen bunları @Valid ile DTO içinde de yapabilirsin)
+        if (request.getUsername() == null || request.getUsername().isBlank()) 
             return ResponseEntity.status(400).body(ApiResponse.error("Username is required."));
-        }
-        if (request.getPassword() == null || request.getPassword().isBlank()) {
+        if (request.getPassword() == null || request.getPassword().isBlank()) 
             return ResponseEntity.status(400).body(ApiResponse.error("Password is required."));
+        
+        if (request.getRole() != null && !userService.isValidRole(request.getRole())) {
+            return ResponseEntity.status(400).body(ApiResponse.error("Invalid role."));
         }
-        if (request.getSurname() == null || request.getSurname().isBlank()) {
-            return ResponseEntity.status(400).body(ApiResponse.error("Surname is required."));
-        }
-        if (request.getRole() != null && !isValidRole(request.getRole())) {
-            return ResponseEntity.status(400)
-                    .body(ApiResponse.error("Invalid role. Accepted values: ROLE_USER, ROLE_ADMIN"));
-        }
-        User user = new User();
-        user.setUsername(request.getUsername());
-        user.setSurname(request.getSurname());
-        user.setPassword(passwordEncoder.encode(request.getPassword()));
-        user.setRole(request.getRole() != null ? request.getRole() : "ROLE_USER");
-        User savedUser = userRepository.save(user);
-        return ResponseEntity.ok(ApiResponse.success("User created successfully.", savedUser));
+
+        return ResponseEntity.ok(ApiResponse.success("User created.", userService.register(request)));
     }
 
     @GetMapping
     public ResponseEntity<ApiResponse<List<User>>> getAllUsers() {
-        List<User> users = userRepository.findAll();
-        return ResponseEntity.ok(ApiResponse.success("Users listed successfully.", users));
-    }
-
-    @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<User>> getUserById(@PathVariable Long id) {
-        return userRepository.findById(id)
-                .map(user -> ResponseEntity.ok(ApiResponse.success("User found.", user)))
-                .orElse(ResponseEntity.status(404).body(ApiResponse.error("User not found with id: " + id)));
+        return ResponseEntity.ok(ApiResponse.success("Listed.", userService.findAll()));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<ApiResponse<User>> updateUser(@PathVariable Long id,
-            @Valid @RequestBody UserRequest request) {
-
-        if (request.getRole() != null && !isValidRole(request.getRole())) {
-            return ResponseEntity.status(400)
-                    .body(ApiResponse.error("Invalid role. Accepted values: ROLE_USER, ROLE_ADMIN"));
+    public ResponseEntity<ApiResponse<User>> updateUser(@PathVariable Long id, @Valid @RequestBody UserRequest request) {
+        if (request.getRole() != null && !userService.isValidRole(request.getRole())) {
+            return ResponseEntity.status(400).body(ApiResponse.error("Invalid role."));
         }
 
-        if (request.getUsername() != null && !request.getUsername().isBlank()) {
-            if (userRepository.existsByUsernameAndIdNot(request.getUsername(), id)) {
-                return ResponseEntity.status(409)
-                        .body(ApiResponse.error("Username already taken."));
-            }
+        if (request.getUsername() != null && userService.existsByUsernameAndIdNot(request.getUsername(), id)) {
+            return ResponseEntity.status(409).body(ApiResponse.error("Username already taken."));
         }
 
-        return userRepository.findById(id).map(user -> {
-            if (request.getUsername() != null && !request.getUsername().isBlank()) {
-                user.setUsername(request.getUsername());
-            }
-            if (request.getSurname() != null && !request.getSurname().isBlank()) {
-                user.setSurname(request.getSurname());
-            }
-            if (request.getPassword() != null && !request.getPassword().isBlank()) {
-                user.setPassword(passwordEncoder.encode(request.getPassword()));
-            }
-            if (request.getRole() != null) {
-                user.setRole(request.getRole());
-            }
-            User updatedUser = userRepository.save(user);
-            return ResponseEntity.ok(ApiResponse.success("User updated successfully.", updatedUser));
-        }).orElse(ResponseEntity.status(404).body(ApiResponse.error("User not found with id: " + id)));
+        return ResponseEntity.ok(ApiResponse.success("Updated.", userService.update(id, request)));
     }
 
     @PatchMapping("/{id}/role")
-public ResponseEntity<ApiResponse<User>> updateRole(
-        @PathVariable Long id, 
-        @RequestBody RoleUpdateRequest roleRequest) { // Map yerine yeni sınıfımızı yazdık
-    
-    String newRole = roleRequest.getRole(); // Artık .get("role") yerine .getRole() diyoruz
-    
-    // ... geri kalan kontrol ve kaydetme kodların aynı kalabilir
-    if (newRole == null || !isValidRole(newRole)) {
-        return ResponseEntity.status(400)
-                .body(ApiResponse.error("Invalid role. Accepted values: ROLE_USER, ROLE_ADMIN"));
+    public ResponseEntity<ApiResponse<User>> updateRole(@PathVariable Long id, @RequestBody RoleUpdateRequest roleRequest) {
+        if (roleRequest.getRole() == null || !userService.isValidRole(roleRequest.getRole())) {
+            return ResponseEntity.status(400).body(ApiResponse.error("Invalid role."));
+        }
+        return ResponseEntity.ok(ApiResponse.success("Role updated.", userService.updateRole(id, roleRequest.getRole())));
     }
-    
-    return userRepository.findById(id).map(user -> {
-        user.setRole(newRole);
-        userRepository.save(user);
-        return ResponseEntity.ok(ApiResponse.success("Role updated successfully", user));
-    }).orElse(ResponseEntity.status(404).body(ApiResponse.error("User not found")));
-}
 
     @DeleteMapping("/{id}")
-@PreAuthorize("hasRole('ADMIN')") // Sadece ADMIN silebilir kuralını buraya ekleyebilirsin
-public ResponseEntity<ApiResponse<Void>> deleteUser(@PathVariable Long id) {
-    // 1. Mevcut giriş yapmış kullanıcının bilgilerini al
-    String currentUsername = org.springframework.security.core.context.SecurityContextHolder
-            .getContext().getAuthentication().getName();
-
-    // 2. Veritabanından silinmek istenen kullanıcıyı bul
-    return userRepository.findById(id).map(user -> {
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<Void>> deleteUser(@PathVariable Long id) {
+        String currentUsername = SecurityContextHolder.getContext().getAuthentication().getName();
         
-        // 3. KENDİNİ SİLME KONTROLÜ
-        if (user.getUsername().equals(currentUsername)) {
-            return ResponseEntity.status(400)
-                    .body(ApiResponse.<Void>error("You cannot delete your own account!"));
-        }
-
-        // 4. Her şey yolundaysa sil
-        userRepository.deleteById(id);
-        return ResponseEntity.ok(ApiResponse.<Void>success("User deleted successfully.", null));
-
-    }).orElse(ResponseEntity.status(404).body(ApiResponse.error("User not found with id: " + id)));
-}
+        return userService.findById(id).map(user -> {
+            if (user.getUsername().equals(currentUsername)) {
+                return ResponseEntity.status(400).body(ApiResponse.<Void>error("You cannot delete yourself!"));
+            }
+            userService.delete(id);
+            return ResponseEntity.ok(ApiResponse.<Void>success("Deleted.", null));
+        }).orElse(ResponseEntity.status(404).body(ApiResponse.error("User not found.")));
+    }
 }
