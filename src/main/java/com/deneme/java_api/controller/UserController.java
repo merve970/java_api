@@ -22,6 +22,7 @@ public class UserController {
     private final UserService userService;
 
     @PostMapping("/register")
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER')")
     public ResponseEntity<ApiResponse<User>> createUser(@RequestBody UserRequest request) {
         // Temel boşluk kontrolleri (Dilersen bunları @Valid ile DTO içinde de yapabilirsin)
         if (request.getUsername() == null || request.getUsername().isBlank()) 
@@ -37,11 +38,13 @@ public class UserController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAnyRole('ADMIN','EMPLOYEE','MANAGER')")
     public ResponseEntity<ApiResponse<List<User>>> getAllUsers() {
         return ResponseEntity.ok(ApiResponse.success("Listed.", userService.findAll()));
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<User>> updateUser(@PathVariable Long id, @Valid @RequestBody UserRequest request) {
         if (request.getRole() != null && !userService.isValidRole(request.getRole())) {
             return ResponseEntity.status(400).body(ApiResponse.error("Invalid role."));
@@ -55,6 +58,7 @@ public class UserController {
     }
 
     @PatchMapping("/{id}/role")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<User>> updateRole(@PathVariable Long id, @RequestBody RoleUpdateRequest roleRequest) {
         if (roleRequest.getRole() == null || !userService.isValidRole(roleRequest.getRole())) {
             return ResponseEntity.status(400).body(ApiResponse.error("Invalid role."));

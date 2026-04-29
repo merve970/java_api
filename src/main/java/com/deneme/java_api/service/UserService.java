@@ -1,7 +1,9 @@
 package com.deneme.java_api.service;
 
 import com.deneme.java_api.dto.UserRequest;
+import com.deneme.java_api.entity.Role;
 import com.deneme.java_api.entity.User;
+import com.deneme.java_api.repository.RoleRepository;
 import com.deneme.java_api.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -16,10 +18,11 @@ import java.util.Optional;
 public class UserService {
 
     private final UserRepository userRepository;
+    private final RoleRepository roleRepository; // Burayı ekledik
     private final PasswordEncoder passwordEncoder;
 
-    public boolean isValidRole(String role) {
-        return "ROLE_USER".equals(role) || "ROLE_ADMIN".equals(role);
+    public boolean isValidRole(String roleName) {
+        return List.of("ROLE_ADMIN", "ROLE_MANAGER", "ROLE_EMPLOYEE").contains(roleName);
     }
 
     public List<User> findAll() {
@@ -30,39 +33,50 @@ public class UserService {
         return userRepository.findById(id);
     }
 
-    public boolean existsByUsernameAndIdNot(String username, Long id) {
-        return userRepository.existsByUsernameAndIdNot(username, id);
-    }
-
     @Transactional
     public User register(UserRequest request) {
         User user = new User();
         user.setUsername(request.getUsername());
         user.setSurname(request.getSurname());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
-        user.setRole(request.getRole() != null ? request.getRole() : "ROLE_USER" );
+        
+        // String'i Role objesine çeviriyoruz
+        String roleName = request.getRole() != null ? request.getRole() : "ROLE_EMPLOYEE";
+        Role role = roleRepository.findByName(roleName)
+                .orElseThrow(() -> new RuntimeException("Role not found: " + roleName));
+        
+        user.setRole(role);
         return userRepository.save(user);
     }
 
     @Transactional
     public User update(Long id, UserRequest request) {
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        User user = userRepository.findById(id).orElseThrow(() -> new RuntimeException("User not found"));
 
-        if (request.getUsername() != null && !request.getUsername().isBlank()) user.setUsername(request.getUsername());
-        if (request.getSurname() != null && !request.getSurname().isBlank()) user.setSurname(request.getSurname());
-        if (request.getPassword() != null && !request.getPassword().isBlank()) user.setPassword(passwordEncoder.encode(request.getPassword()));
-        if (request.getRole() != null) user.setRole(request.getRole());
+        if (request.getUsername() != null) user.setUsername(request.getUsername());
+        if (request.getSurname() != null) user.setSurname(request.getSurname());
+        if (request.getPassword() != null) user.setPassword(passwordEncoder.encode(request.getPassword()));
+        
+        if (request.getRole() != null) {
+            Role role = roleRepository.findByName(request.getRole())
+                    .orElseThrow(() -> new RuntimeException("Role not found"));
+            user.setRole(role);
+        }
 
         return userRepository.save(user);
     }
 
     @Transactional
-    public User updateRole(Long id, String newRole) {
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-        user.setRole(newRole);
+    public User updateRole(Long id, String newRoleName) {
+        User user = userRepository.findById(id).orElseThrow(() -> new RuntimeException("User not found"));
+        Role role = roleRepository.findByName(newRoleName)
+                .orElseThrow(() -> new RuntimeException("Role not found"));
+        user.setRole(role);
         return userRepository.save(user);
+    }
+
+    public boolean existsByUsernameAndIdNot(String username, Long id) {
+        return userRepository.existsByUsernameAndIdNot(username, id);
     }
 
     @Transactional

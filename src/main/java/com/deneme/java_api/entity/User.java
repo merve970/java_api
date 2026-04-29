@@ -2,7 +2,7 @@ package com.deneme.java_api.entity; // Paket adının klasör yapınla aynı old
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+//import io.swagger.v3.oas.annotations.media.Schema;
 
 import jakarta.persistence.*;
 import lombok.Data;
@@ -26,7 +26,8 @@ public class User {
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String password;
 
-    @Column(nullable = false)
-    @Schema(allowableValues = { "ROLE_USER", "ROLE_ADMIN" })
-    private String role;
+    @ManyToOne(fetch = FetchType.EAGER) 
+    @JoinColumn(name = "role_id") 
+    private Role role;
+
 }
