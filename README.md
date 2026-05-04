@@ -1,11 +1,11 @@
 # Java API Projesi
 
-Bu proje, kullanıcı yönetimi için bir REST API sağlayan bir Spring Boot uygulamasıdır. JWT (JSON Web Token) tabanlı kimlik doğrulama ve yetkilendirme mekanizması kullanır. PostgreSQL veritabanı ile kullanıcı verilerini yönetir.
+Bu proje, kullanıcı yönetimi için bir REST API sağlayan bir Spring Boot uygulamasıdır. JWT (JSON Web Token) ve Basic Auth tabanlı kimlik doğrulama ve yetkilendirme mekanizması kullanır. PostgreSQL veritabanı ile kullanıcı verilerini yönetir.
 
 ## Teknolojiler
 
-- **Java 25**
-- **Spring Boot 4.0.5**
+- **Java 21**
+- **Spring Boot 3.3.5**
 - **Spring Security**: Kimlik doğrulama ve yetkilendirme için.
 - **Spring Data JPA**: Veritabanı işlemleri için.
 - **PostgreSQL**: Veritabanı olarak.
@@ -19,7 +19,8 @@ Bu proje, kullanıcı yönetimi için bir REST API sağlayan bir Spring Boot uyg
 
 ### Kimlik Doğrulama
 
-- `POST /auth/login`: Kullanıcı girişi yapar ve bir JWT token döner.
+- `POST /auth/login/bearer`: JWT ile giriş yapar ve bir token döner.
+- `POST /auth/login/basic`: Basic Auth ile giriş yapar.
 
 ### Kullanıcı Yönetimi
 
@@ -46,7 +47,7 @@ Bu proje, kullanıcı yönetimi için bir REST API sağlayan bir Spring Boot uyg
     docker-compose up -d
     ```
 
-Uygulama `http://localhost:8080` adresinde çalışacaktır.
+Uygulama `http://localhost:8080` (JWT) ve `http://localhost:8081` (Basic Auth) adreslerinde çalışacaktır.
 
 ### Manuel Olarak
 
@@ -58,8 +59,6 @@ Uygulama `http://localhost:8080` adresinde çalışacaktır.
     ```
 
 ## Testler
-
-
 
 ### Örnek Test Senaryosu
 

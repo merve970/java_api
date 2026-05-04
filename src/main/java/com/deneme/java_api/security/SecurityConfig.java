@@ -44,7 +44,7 @@ public class SecurityConfig {
                                                                                 .scheme("basic")));
         }
 
-        // 1. ZİNCİR: 8081 Portu (Basic Auth)
+        // 8081 Portu (Basic Auth)
         @Bean
         @Order(1)
         public SecurityFilterChain basicFilterChain(HttpSecurity http) throws Exception {

@@ -24,7 +24,6 @@ public class UserController {
     @PostMapping("/register")
     @PreAuthorize("hasAnyRole('ADMIN','MANAGER')")
     public ResponseEntity<ApiResponse<User>> createUser(@RequestBody UserRequest request) {
-        // Temel boşluk kontrolleri (Dilersen bunları @Valid ile DTO içinde de yapabilirsin)
         if (request.getUsername() == null || request.getUsername().isBlank()) 
             return ResponseEntity.status(400).body(ApiResponse.error("Username is required."));
         if (request.getPassword() == null || request.getPassword().isBlank()) 

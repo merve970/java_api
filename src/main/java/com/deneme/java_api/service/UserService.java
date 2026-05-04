@@ -18,7 +18,7 @@ import java.util.Optional;
 public class UserService {
 
     private final UserRepository userRepository;
-    private final RoleRepository roleRepository; // Burayı ekledik
+    private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
 
     public boolean isValidRole(String roleName) {
@@ -40,7 +40,6 @@ public class UserService {
         user.setSurname(request.getSurname());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         
-        // String'i Role objesine çeviriyoruz
         String roleName = request.getRole() != null ? request.getRole() : "ROLE_EMPLOYEE";
         Role role = roleRepository.findByName(roleName)
                 .orElseThrow(() -> new RuntimeException("Role not found: " + roleName));
